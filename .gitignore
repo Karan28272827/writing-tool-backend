@@ -1,0 +1,24 @@
+.venv/
+venv/
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+# Environment variables
+.env
+*.env
+# VSCode & IDE settings
+.vscode/
+.idea/
+# Logs
+*.log
+# macOS system files
+.DS_Store
+# Build / package files
+build/
+dist/
+*.egg-info/
+# Byte-compiled / optimized files
+*.pyc

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAI
+from google import genai
 import os
 from dotenv import load_dotenv
 
@@ -18,8 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize Google Gemini client
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 @app.get("/")
 def root():
@@ -33,19 +33,15 @@ def log_dummy(message: str = Form(...)):
 @app.post("/format")
 def format_text(thoughts: str = Form(...)):
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a professional writing assistant that rewrites user thoughts into clean, polished, and natural English."},
-                {"role": "user", "content": thoughts}
-            ],
-            temperature=0.7,
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=f"You are a professional writing assistant. Polish and refine the following text:\n\n{thoughts}"
         )
 
-        polished_output = response.choices[0].message.content.strip()
+        polished_output = response.text.strip()
 
         # Log to console
-        print("=== OpenAI API Response ===")
+        print("=== Gemini API Response ===")
         print(polished_output)
         print("==========================")
 
@@ -58,5 +54,5 @@ def format_text(thoughts: str = Form(...)):
         return {"formatted": formatted}
 
     except Exception as e:
-        print("Error:", e)  # Also log errors
+        print("Error:", e)
         return {"error": str(e)}

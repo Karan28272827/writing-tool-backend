@@ -1,58 +1,114 @@
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from google import genai
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env
+# Load environment variables
 load_dotenv()
 
 app = FastAPI()
 
-# Allow frontend to access backend
+# CORS – update with your deployed frontend URL
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Adjust for your frontend
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
 
-# Initialize Google Gemini client
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+# Initialize Gemini client
+API_KEY = os.getenv("GOOGLE_API_KEY")
+if not API_KEY:
+    raise RuntimeError("GOOGLE_API_KEY not set in environment")
+
+client = genai.Client(api_key=API_KEY)
+
 
 @app.get("/")
 def root():
-    return {"message": "FastAPI Writing Tool Backend is running 🚀"}
+    return {"message": "✅ FastAPI Writing Tool Backend running"}
 
-@app.post("/log")
-def log_dummy(message: str = Form(...)):
-    print("Frontend log:", message)
-    return {"status": "received"}
+# Pydantic model for JSON input
+
+
+class FormatRequest(BaseModel):
+    type: str
+    preference: str
+    key_req: str
+    supp_info: str
+    extra: str
+
 
 @app.post("/format")
-def format_text(thoughts: str = Form(...)):
+def format_text(request: FormatRequest):
+    type_ = request.type.strip()
+    preference = request.preference.strip()
+    key_req = request.key_req.strip()
+    supp_info = request.supp_info.strip()
+    extra = request.extra.strip()
+
+    if not (key_req or supp_info or extra):
+        raise HTTPException(status_code=400, detail="Empty text")
+
+    if len(key_req + supp_info + extra) > 2000:
+        raise HTTPException(
+            status_code=400, detail="Input too long (max 2000 chars)")
+
+    # Determine model names and strength from preference
+    preference_map = {
+        "Model A Strongly": ("A", "B", "strongly"),
+        "Model A Slightly": ("A", "B", "slightly"),
+        "Neutral": ("A", "B", "neutral"),
+        "Model B Slightly": ("B", "A", "slightly"),
+        "Model B Strongly": ("B", "A", "strongly"),
+        "Unsure": ("A", "B", "unsure"),
+    }
+    model, other_model, strength = preference_map.get(
+        preference, ("A", "B", "neutral"))
+
+    # Select template based on type
+    if type_ == "Process Performance":
+        template = (
+            f"Model {model} is preferred based on process performance.\n"
+            f"In terms of key requirements, {key_req}.\n"
+            f"Regarding supplementary information, {supp_info}.\n"
+            f"Considering efficiency and errors, {extra}.\n"
+            f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
+            "Rephrase the text for grammar and clarity only. "
+            "Do NOT change structure or format. Do not add or remove information.\n\n"
+            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+        )
+    else:  # Outcome Performance
+        template = (
+            f"Model {model} is preferred based on outcome performance.\n"
+            f"In terms of key results, {key_req}.\n"
+            f"Regarding supplementary information, {supp_info}.\n"
+            f"Additionally, {extra}.\n"
+            f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
+            "Rephrase the text for grammar and clarity only. "
+            "Do NOT change structure or format. Do not add or remove information.\n\n"
+            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+        )
+
+    # Send to Gemini for polishing
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=f"You are a professional writing assistant. Polish and refine the following text:\n\n{thoughts}"
+            contents=f"You are a professional writing assistant. Polish the following text:\n\n{template}"
         )
+        print("Gemini response:", response)
 
-        polished_output = response.text.strip()
+        polished = (response.text or "").strip()
+        if not polished:
+            raise HTTPException(
+                status_code=500, detail="Empty response from model")
 
-        # Log to console
-        print("=== Gemini API Response ===")
-        print(polished_output)
-        print("==========================")
+        return {"formatted": polished}
 
-        formatted = (
-            f"📄 Standardized Response\n\n"
-            f"🧠 User Thoughts:\n{thoughts}\n\n"
-            f"✅ Polished Output:\n{polished_output}"
-        )
-
-        return {"formatted": formatted}
 
     except Exception as e:
-        print("Error:", e)
-        return {"error": str(e)}
+        print("Gemini API error:", e)
+        raise HTTPException(status_code=500, detail="Model error")

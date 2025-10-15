@@ -6,33 +6,20 @@ from google import genai
 import os
 import re
 from dotenv import load_dotenv
-from starlette.middleware.base import BaseHTTPMiddleware
 
 # Load environment variables
 load_dotenv()
 
 app = FastAPI()
 
-# Add CORS headers to ALL responses
-class CustomCORSMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        return response
-
-app.add_middleware(CustomCORSMiddleware)
-
 # CORS configuration - Get allowed origins from environment
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS").split(",")
-print(ALLOWED_ORIGINS)
+# print(ALLOWED_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
@@ -41,7 +28,6 @@ app.add_middleware(
 API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
     print("Warning: GOOGLE_API_KEY not set in environment")
-    # Don't raise error in production, just log it
     client = None
 else:
     client = genai.Client(api_key=API_KEY)
@@ -49,78 +35,12 @@ else:
 
 @app.get("/")
 def root():
-    return JSONResponse(
-        content={"message": "✅ FastAPI Writing Tool Backend running"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
+    return {"message": "✅ FastAPI Writing Tool Backend running"}
 
-@app.get("/test-cors")
-def test_cors():
-    return JSONResponse(
-        content={"message": "CORS test successful", "timestamp": "2024-01-01"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
 
 @app.options("/{path:path}")
 async def options_handler(request: Request, path: str):
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
-
-@app.options("/")
-async def options_root():
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
-
-@app.options("/format")
-async def options_format():
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
-
-# Catch-all OPTIONS handler for any other path
-@app.options("/{full_path:path}")
-async def options_catch_all(full_path: str):
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
-
-# Pydantic model for JSON input
+    return JSONResponse(content={"message": "OK"})
 
 
 class FormatRequest(BaseModel):
@@ -185,55 +105,20 @@ async def format_text(request: FormatRequest):
     # Send to Gemini for polishing
     try:
         if client is None:
-            # Return the template as-is if no API key is configured
-            return JSONResponse(
-                content={"formatted": template},
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "*",
-                    "Access-Control-Allow-Headers": "*",
-                    "Access-Control-Allow-Credentials": "true",
-                }
-            )
+            return {"formatted": template}
             
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash-exp",
             contents=f"You are a professional writing assistant. Polish the following text:\n\n{template}"
         )
         print("Gemini response:", response)
 
         polished = (response.text or "").strip()
         if not polished:
-            # Fallback to original template if response is empty
-            return JSONResponse(
-                content={"formatted": template},
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "*",
-                    "Access-Control-Allow-Headers": "*",
-                    "Access-Control-Allow-Credentials": "true",
-                }
-            )
+            return {"formatted": template}
 
-        return JSONResponse(
-            content={"formatted": polished},
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Credentials": "true",
-            }
-        )
+        return {"formatted": polished}
 
     except Exception as e:
         print("Gemini API error:", e)
-        # Fallback to original template on error
-        return JSONResponse(
-            content={"formatted": template},
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Credentials": "true",
-            }
-        )
+        return {"formatted": template}

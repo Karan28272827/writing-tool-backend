@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
 from pydantic import BaseModel
 from google import genai
 import os
@@ -13,17 +12,16 @@ origins = [
     "https://writing-tool-frontend-oam94obeu-karans-projects-eeda5f8d.vercel.app",
     "https://writing-tool-frontend-2u1m0tu16-karans-projects-eeda5f8d.vercel.app",
     "https://writing-tool-frontend.vercel.app",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost:3000"
 ]
 app = FastAPI()
 
-# Configure CORS with explicit allowlist
+# CORS – update with your deployed frontend URL
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
@@ -57,28 +55,16 @@ class FormatRequest(BaseModel):
 
 @app.post("/format")
 def format_text(request: FormatRequest):
-    print("Request received:", request)
-    print("Request type:", type(request))
-    print("Request dict:", request.dict())
-    
     type_ = request.type.strip()
     preference = request.preference.strip()
     key_req = request.key_req.strip()
     supp_info = request.supp_info.strip()
     extra = request.extra.strip()
 
-    print(f"Processed fields - type: '{type_}', preference: '{preference}'")
-    print(f"key_req: '{key_req}', supp_info: '{supp_info}', extra: '{extra}'")
-
     if not (key_req or supp_info or extra):
-        print("ERROR: All text fields are empty")
         raise HTTPException(status_code=400, detail="Empty text")
 
-    total_length = len(key_req + supp_info + extra)
-    print(f"Total text length: {total_length}")
-    
-    if total_length > 2000:
-        print(f"ERROR: Input too long ({total_length} chars, max 2000)")
+    if len(key_req + supp_info + extra) > 2000:
         raise HTTPException(
             status_code=400, detail="Input too long (max 2000 chars)")
 

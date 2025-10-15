@@ -14,12 +14,12 @@ origins = [
     "https://writing-tool-frontend.vercel.app",
     "http://localhost:3000"
 ]
-print("CORS ORIGINS:", origins)
+app = FastAPI()
 
 # CORS – update with your deployed frontend URL
 app.add_middleware(
      CORSMiddleware,
-    allow_origins=origins,
+    allow_origins= ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

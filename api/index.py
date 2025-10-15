@@ -9,18 +9,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 origins = [
-    "https://writing-tool-frontend-oam94obeu-karans-projects-eeda5f8d.vercel.app/",
-    # "http://localhost:3000",  # Add local frontend URL for local dev
+     "https://writing-tool-frontend-oam94obeu-karans-projects-eeda5f8d.vercel.app",
+    "http://localhost:3000"
 ]
 app = FastAPI()
 
 # CORS – update with your deployed frontend URL
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["POST", "GET"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

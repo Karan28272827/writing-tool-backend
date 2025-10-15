@@ -80,21 +80,19 @@ async def format_text(request: FormatRequest):
 
     # Select template based on type
     if type_ == "Process Performance":
-    # Conditionally include the 'extra' section only if provided
-        extra_line = f"Considering efficiency and errors, {extra}.\n" if extra else ""
-
         template = (
+            f"Model {model} is preferred based on process performance.\n"
             f"In terms of key requirements, {key_req}.\n"
             f"Regarding supplementary information, {supp_info}.\n"
-            f"{extra_line}"
+            f"Considering efficiency and errors, {extra}.\n"
             f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
             "Rephrase the text for grammar and clarity only. "
             "Do NOT change structure or format. Do not add or remove information.\n\n"
             "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
         )
-
     else:  # Outcome Performance
         template = (
+            f"Model {model} is preferred based on outcome performance.\n"
             f"In terms of key results, {key_req}.\n"
             f"Regarding supplementary information, {supp_info}.\n"
             f"Additionally, {extra}.\n"
@@ -103,7 +101,6 @@ async def format_text(request: FormatRequest):
             "Do NOT change structure or format. Do not add or remove information.\n\n"
             "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
         )
-
 
     # Send to Gemini for polishing
     try:

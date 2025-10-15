@@ -12,12 +12,16 @@ load_dotenv()
 
 app = FastAPI()
 
-# CORS configuration - ALLOW EVERYTHING
+# CORS configuration - FIXED
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://writing-tool-frontend-2ulm0tu16-karans-projects-eeda5f8d.vercel.app",
+        "https://*.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
-    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -27,7 +31,6 @@ app.add_middleware(
 API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
     print("Warning: GOOGLE_API_KEY not set in environment")
-    # Don't raise error in production, just log it
     client = None
 else:
     client = genai.Client(api_key=API_KEY)
@@ -35,29 +38,12 @@ else:
 
 @app.get("/")
 def root():
-    return JSONResponse(
-        content={"message": "✅ FastAPI Writing Tool Backend running"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
+    return {"message": "✅ FastAPI Writing Tool Backend running"}
+
 
 @app.options("/{path:path}")
 async def options_handler(request: Request, path: str):
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
-
-# Pydantic model for JSON input
+    return JSONResponse(content={"message": "OK"})
 
 
 class FormatRequest(BaseModel):
@@ -122,55 +108,20 @@ async def format_text(request: FormatRequest):
     # Send to Gemini for polishing
     try:
         if client is None:
-            # Return the template as-is if no API key is configured
-            return JSONResponse(
-                content={"formatted": template},
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "*",
-                    "Access-Control-Allow-Headers": "*",
-                    "Access-Control-Allow-Credentials": "true",
-                }
-            )
+            return {"formatted": template}
             
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash-exp",
             contents=f"You are a professional writing assistant. Polish the following text:\n\n{template}"
         )
         print("Gemini response:", response)
 
         polished = (response.text or "").strip()
         if not polished:
-            # Fallback to original template if response is empty
-            return JSONResponse(
-                content={"formatted": template},
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "*",
-                    "Access-Control-Allow-Headers": "*",
-                    "Access-Control-Allow-Credentials": "true",
-                }
-            )
+            return {"formatted": template}
 
-        return JSONResponse(
-            content={"formatted": polished},
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Credentials": "true",
-            }
-        )
+        return {"formatted": polished}
 
     except Exception as e:
         print("Gemini API error:", e)
-        # Fallback to original template on error
-        return JSONResponse(
-            content={"formatted": template},
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Credentials": "true",
-            }
-        )
+        return {"formatted": template}

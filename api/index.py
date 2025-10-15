@@ -11,6 +11,7 @@ load_dotenv()
 origins = [
     "https://writing-tool-frontend-oam94obeu-karans-projects-eeda5f8d.vercel.app",
     "https://writing-tool-frontend-2u1m0tu16-karans-projects-eeda5f8d.vercel.app",
+    "https://writing-tool-frontend.vercel.app",
     "http://localhost:3000"
 ]
 app = FastAPI()

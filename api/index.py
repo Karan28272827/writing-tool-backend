@@ -88,7 +88,7 @@ async def format_text(request: FormatRequest):
             f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
             "Rephrase the text for grammar and clarity only. "
             "Do NOT change structure or format. Do not add or remove information.\n\n"
-            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+            ":white_tick: Consistent structure\n:white_tick: Perfect grammar and phrasing\n:white_tick: Human-sounding clarity\n:white_tick: Zero format drift"
         )
     else:  # Outcome Performance
         template = (
@@ -99,7 +99,7 @@ async def format_text(request: FormatRequest):
             f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
             "Rephrase the text for grammar and clarity only. "
             "Do NOT change structure or format. Do not add or remove information.\n\n"
-            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+            ":white_tick: Consistent structure\n:white_tick: Perfect grammar and phrasing\n:white_tick: Human-sounding clarity\n:white_tick: Zero format drift"
         )
 
     # Send to Gemini for polishing

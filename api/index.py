@@ -11,13 +11,14 @@ load_dotenv()
 
 app = FastAPI()
 
-# CORS configuration - more permissive for production
+# CORS configuration - ALLOW EVERYTHING
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Initialize Gemini client
@@ -32,11 +33,27 @@ else:
 
 @app.get("/")
 def root():
-    return {"message": "✅ FastAPI Writing Tool Backend running"}
+    return JSONResponse(
+        content={"message": "✅ FastAPI Writing Tool Backend running"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 @app.options("/{path:path}")
 async def options_handler(request: Request, path: str):
-    return {"message": "OK"}
+    return JSONResponse(
+        content={"message": "OK"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 # Pydantic model for JSON input
 
@@ -104,7 +121,15 @@ async def format_text(request: FormatRequest):
     try:
         if client is None:
             # Return the template as-is if no API key is configured
-            return {"formatted": template}
+            return JSONResponse(
+                content={"formatted": template},
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                }
+            )
             
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -115,11 +140,35 @@ async def format_text(request: FormatRequest):
         polished = (response.text or "").strip()
         if not polished:
             # Fallback to original template if response is empty
-            return {"formatted": template}
+            return JSONResponse(
+                content={"formatted": template},
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                }
+            )
 
-        return {"formatted": polished}
+        return JSONResponse(
+            content={"formatted": polished},
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+            }
+        )
 
     except Exception as e:
         print("Gemini API error:", e)
         # Fallback to original template on error
-        return {"formatted": template}
+        return JSONResponse(
+            content={"formatted": template},
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+            }
+        )

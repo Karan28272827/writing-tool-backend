@@ -67,30 +67,30 @@ async def format_text(request: FormatRequest):
             status_code=400, detail="Input too long (max 2000 chars)")
 
     # Determine model names and strength from preference
-    preference_map = {
-        "Model A Strongly": ("A", "B", "strongly"),
-        "Model A Slightly": ("A", "B", "slightly"),
-        "Neutral": ("A", "B", "neutral"),
-        "Model B Slightly": ("B", "A", "slightly"),
-        "Model B Strongly": ("B", "A", "strongly"),
-        "Unsure": ("A", "B", "unsure"),
-    }
-    model, other_model, strength = preference_map.get(
-        preference, ("A", "B", "neutral"))
+    # preference_map = {
+    #     "Model A Strongly": ("A", "B", "strongly"),
+    #     "Model A Slightly": ("A", "B", "slightly"),
+    #     "Neutral": ("A", "B", "neutral"),
+    #     "Model B Slightly": ("B", "A", "slightly"),
+    #     "Model B Strongly": ("B", "A", "strongly"),
+    #     "Unsure": ("A", "B", "unsure"),
+    # }
+    # model, other_model, strength = preference_map.get(
+    #     preference, ("A", "B", "neutral"))
 
-    # Select template based on type
-    if type_ == "Process Performance":
-        template = (
-            f"Model {model} is preferred based on process performance.\n"
-            f"In terms of key requirements, {key_req}.\n"
-            f"Regarding supplementary information, {supp_info}.\n"
-            f"Considering efficiency and errors, {extra}.\n"
-            f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
-            "Rephrase the text for grammar and clarity only. "
-            "Do NOT change structure or format. Do not add or remove information.\n\n"
-            ":white_tick: Consistent structure\n:white_tick: Perfect grammar and phrasing\n:white_tick: Human-sounding clarity\n:white_tick: Zero format drift"
-        )
-    else:  # Outcome Performance
+    # # Select template based on type
+    # if type_ == "Process Performance":
+    #     template = (
+    #         f"Model {model} is preferred based on process performance.\n"
+    #         f"In terms of key requirements, {key_req}.\n"
+    #         f"Regarding supplementary information, {supp_info}.\n"
+    #         f"Considering efficiency and errors, {extra}.\n"
+    #         f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
+    #         "Rephrase the text for grammar and clarity only. "
+    #         "Do NOT change structure or format. Do not add or remove information.\n\n"
+    #         ":white_tick: Consistent structure\n:white_tick: Perfect grammar and phrasing\n:white_tick: Human-sounding clarity\n:white_tick: Zero format drift"
+    #     )
+    # else:  # Outcome Performance
         template = (
             f"Model {model} is preferred based on outcome performance.\n"
             f"In terms of key results, {key_req}.\n"
@@ -101,6 +101,71 @@ async def format_text(request: FormatRequest):
             "Do NOT change structure or format. Do not add or remove information.\n\n"
             ":white_tick: Consistent structure\n:white_tick: Perfect grammar and phrasing\n:white_tick: Human-sounding clarity\n:white_tick: Zero format drift"
         )
+
+
+
+    # Determine model names and strength from preference
+    preference_map = {
+        "Model A Strongly": ("A", "B", "strongly"),
+        "Model A Slightly": ("A", "B", "slightly"),
+        "Neutral": ("A", "B", "neutral"),
+        "Model B Slightly": ("B", "A", "slightly"),
+        "Model B Strongly": ("B", "A", "strongly"),
+        "Unsure": ("A", "B", "unsure"),
+    }
+    model, other_model, strength = preference_map.get(preference, ("A", "B", "neutral"))
+
+    # ✳️ Handle Neutral and Unsure separately (no comparison statements)
+    if strength == "neutral":
+        template = (
+            f"Both models performed equally well on the task.\n"
+            f"In terms of key requirements, {key_req or 'both satisfied the necessary conditions'}.\n"
+            f"In terms of supplementary information, {supp_info or 'both provided comparable additional details'}.\n"
+            f"{f'Additional notes: {extra}.' if extra else ''}\n"
+            f"Therefore, there is no clear preference between Model A and Model B.\n\n"
+            "Polish this text for grammar and clarity only. Keep it neutral and factual.\n\n"
+            "✅ Balanced tone\n✅ Neutral phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+        )
+
+    elif strength == "unsure":
+        template = (
+            f"The available information is insufficient to determine a clear preference.\n"
+            f"In terms of key requirements, {key_req or 'details were limited or inconclusive'}.\n"
+            f"In terms of supplementary information, {supp_info or 'no major differences were observed'}.\n"
+            f"{f'Additional notes: {extra}.' if extra else ''}\n"
+            f"Therefore, the preference is marked as Unsure.\n\n"
+            "Polish this text for grammar and clarity only. Keep it neutral and uncertain without implying preference.\n\n"
+            "✅ Balanced tone\n✅ No implied bias\n✅ Human-sounding clarity\n✅ Zero format drift"
+        )
+
+    # ✅ Normal comparison cases
+    elif type_ == "Process Performance":
+        extra_line = f"Considering efficiency and errors, {extra}.\n" if extra else ""
+        template = (
+            f"Model {model} is preferred based on process performance.\n"
+            f"In terms of key requirements, {key_req}.\n"
+            f"In terms of supplementary information, {supp_info}.\n"
+            f"{extra_line}"
+            f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
+            "Rephrase the text for grammar and clarity only. "
+            "Do NOT change structure or format. Do not add or remove information.\n\n"
+            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+        )
+
+    else:  # Outcome Performance
+        extra_line = f"Additionally, {extra}.\n" if extra else ""
+        template = (
+            f"Model {model} is preferred based on outcome performance.\n"
+            f"In terms of key results, {key_req}.\n"
+            f"In terms of supplementary information, {supp_info}.\n"
+            f"{extra_line}"
+            f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
+            "Rephrase the text for grammar and clarity only. "
+            "Do NOT change structure or format. Do not add or remove information.\n\n"
+            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+        )
+
+
 
     # Send to Gemini for polishing
     try:

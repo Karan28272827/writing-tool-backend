@@ -24,10 +24,12 @@ class CustomCORSMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(CustomCORSMiddleware)
 
-# CORS configuration - ALLOW EVERYTHING
+# CORS configuration - Get allowed origins from environment
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS").split(",")
+print(ALLOWED_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -48,6 +50,18 @@ else:
 def root():
     return JSONResponse(
         content={"message": "✅ FastAPI Writing Tool Backend running"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
+
+@app.get("/test-cors")
+def test_cors():
+    return JSONResponse(
+        content={"message": "CORS test successful", "timestamp": "2024-01-01"},
         headers={
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "*",

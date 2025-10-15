@@ -54,3 +54,5 @@ dist/
 *.egg-info/
 # Byte-compiled / optimized files
 *.pyc
+
+my_env

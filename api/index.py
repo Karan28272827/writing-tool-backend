@@ -18,11 +18,12 @@ app = FastAPI()
 
 # CORS – update with your deployed frontend URL
 app.add_middleware(
-     CORSMiddleware,
-    allow_origins= ["*"],
+    CORSMiddleware,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Initialize Gemini client
@@ -36,6 +37,10 @@ client = genai.Client(api_key=API_KEY)
 @app.get("/")
 def root():
     return {"message": "✅ FastAPI Writing Tool Backend running"}
+
+@app.options("/{path:path}")
+def options_handler(path: str):
+    return {"message": "OK"}
 
 # Pydantic model for JSON input
 

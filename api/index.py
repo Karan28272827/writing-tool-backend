@@ -25,6 +25,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Initialize Gemini client
@@ -38,6 +39,10 @@ client = genai.Client(api_key=API_KEY)
 @app.get("/")
 def root():
     return {"message": "✅ FastAPI Writing Tool Backend running"}
+
+@app.options("/{path:path}")
+def options_handler(path: str):
+    return {"message": "OK"}
 
 # Pydantic model for JSON input
 

@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from google import genai
 import os
@@ -8,30 +9,25 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-origins = [
-    "https://writing-tool-frontend-oam94obeu-karans-projects-eeda5f8d.vercel.app",
-    "https://writing-tool-frontend-2u1m0tu16-karans-projects-eeda5f8d.vercel.app",
-    "https://writing-tool-frontend.vercel.app",
-    "http://localhost:3000"
-]
 app = FastAPI()
 
-# CORS – update with your deployed frontend URL
+# CORS configuration - more permissive for production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_credentials=False,
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # Initialize Gemini client
 API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY not set in environment")
-
-client = genai.Client(api_key=API_KEY)
+    print("Warning: GOOGLE_API_KEY not set in environment")
+    # Don't raise error in production, just log it
+    client = None
+else:
+    client = genai.Client(api_key=API_KEY)
 
 
 @app.get("/")
@@ -39,7 +35,7 @@ def root():
     return {"message": "✅ FastAPI Writing Tool Backend running"}
 
 @app.options("/{path:path}")
-def options_handler(path: str):
+async def options_handler(request: Request, path: str):
     return {"message": "OK"}
 
 # Pydantic model for JSON input
@@ -54,7 +50,7 @@ class FormatRequest(BaseModel):
 
 
 @app.post("/format")
-def format_text(request: FormatRequest):
+async def format_text(request: FormatRequest):
     type_ = request.type.strip()
     preference = request.preference.strip()
     key_req = request.key_req.strip()
@@ -106,6 +102,10 @@ def format_text(request: FormatRequest):
 
     # Send to Gemini for polishing
     try:
+        if client is None:
+            # Return the template as-is if no API key is configured
+            return {"formatted": template}
+            
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=f"You are a professional writing assistant. Polish the following text:\n\n{template}"
@@ -114,12 +114,12 @@ def format_text(request: FormatRequest):
 
         polished = (response.text or "").strip()
         if not polished:
-            raise HTTPException(
-                status_code=500, detail="Empty response from model")
+            # Fallback to original template if response is empty
+            return {"formatted": template}
 
         return {"formatted": polished}
 
-
     except Exception as e:
         print("Gemini API error:", e)
-        raise HTTPException(status_code=500, detail="Model error")
+        # Fallback to original template on error
+        return {"formatted": template}

@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from google import genai
 import os
+import re
 from dotenv import load_dotenv
 from starlette.middleware.base import BaseHTTPMiddleware
 

@@ -12,15 +12,12 @@ load_dotenv()
 
 app = FastAPI()
 
-# CORS configuration - FIXED
+# CORS configuration - Get allowed origins from environment
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS").split(",")
+# print(ALLOWED_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://writing-tool-frontend-2ulm0tu16-karans-projects-eeda5f8d.vercel.app",
-        "https://*.vercel.app",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

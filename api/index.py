@@ -258,51 +258,93 @@ async def format_text(request: FormatRequest):
     }
     model, other_model, strength = preference_map.get(preference, ("A", "B", "neutral"))
 
+    # # --- Template Construction ---
+    # if strength == "neutral":
+    #     template = (
+    #         f"Both models performed equally well on the task.\n"
+    #         f"In terms of key requirements, {key_req or 'both satisfied the necessary conditions'}.\n"
+    #         f"In terms of supplementary information, {supp_info or 'both provided comparable additional details'}.\n"
+    #         f"{f'Additional notes: {extra}.' if extra else ''}\n"
+    #         f"Therefore, there is no clear preference between Model A and Model B.\n\n"
+    #         "Polish this text for grammar and clarity only. Keep it neutral and factual.\n\n"
+    #         "✅ Balanced tone\n✅ Neutral phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+    #     )
+
+    # elif strength == "unsure":
+    #     template = (
+    #         f"The evaluation could not be completed due to certain issues or limitations.\n"
+    #         f"{extra if extra else 'No further details were provided by the annotator.'}\n"
+    #         f"Therefore, the preference is marked as Unsure, as a valid comparison between the models could not be established.\n\n"
+    #         "Polish this text for grammar and clarity only. Keep it factual, formal, and concise without implying comparison.\n\n"
+    #         ":white_tick: Proper formatting\n:white_tick: Neutral tone\n:white_tick: Human-sounding clarity\n:white_tick: Clear closing statement"
+    #     )
+
+
+    # elif type_ == "Process Performance":
+    #     extra_line = f"Considering efficiency and errors, {extra}.\n" if extra else ""
+    #     template = (
+    #         f"In terms of key requirements, {key_req}.\n"
+    #         f"In terms of supplementary information, {supp_info}.\n"
+    #         f"{extra_line}"
+    #         f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
+    #         "Rephrase the text for grammar and clarity only. "
+    #         "Do NOT change structure or format. Do not add or remove information.\n\n"
+    #         "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+    #     )
+
+    # else:  # Outcome Performance
+    #     extra_line = f"Additionally, {extra}.\n" if extra else ""
+    #     template = (
+    #         f"In terms of key results, {key_req}.\n"
+    #         f"In terms of supplementary information, {supp_info}.\n"
+    #         f"{extra_line}"
+    #         f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
+    #         "Rephrase the text for grammar and clarity only. "
+    #         "Do NOT change structure or format. Do not add or remove information.\n\n"
+    #         "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+    #     )
     # --- Template Construction ---
+    # --- Template Construction (Comparative Style) ---
     if strength == "neutral":
         template = (
-            f"Both models performed equally well on the task.\n"
-            f"In terms of key requirements, {key_req or 'both satisfied the necessary conditions'}.\n"
-            f"In terms of supplementary information, {supp_info or 'both provided comparable additional details'}.\n"
-            f"{f'Additional notes: {extra}.' if extra else ''}\n"
-            f"Therefore, there is no clear preference between Model A and Model B.\n\n"
-            "Polish this text for grammar and clarity only. Keep it neutral and factual.\n\n"
+            f"Both models {key_req or 'fulfilled the key requirements successfully'}.\n"
+            f"Both models {supp_info or 'provided comparable supplementary information'}.\n"
+            f"{f'Both models also {extra}.' if extra else ''}\n"
+            f"Therefore, there is no clear advantage between Model A and Model B.\n\n"
+            "Polish this text for grammar and clarity only. Keep it neutral, factual, and concise.\n\n"
             "✅ Balanced tone\n✅ Neutral phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
         )
 
     elif strength == "unsure":
         template = (
-            f"The evaluation could not be completed due to certain issues or limitations.\n"
-            f"{extra if extra else 'No further details were provided by the annotator.'}\n"
-            f"Therefore, the preference is marked as Unsure, as a valid comparison between the models could not be established.\n\n"
-            "Polish this text for grammar and clarity only. Keep it factual, formal, and concise without implying comparison.\n\n"
-            ":white_tick: Proper formatting\n:white_tick: Neutral tone\n:white_tick: Human-sounding clarity\n:white_tick: Clear closing statement"
+            f"The comparison could not be completed due to {extra or 'unclear or missing evaluation details'}.\n"
+            f"Therefore, it cannot be determined whether Model A or Model B performed better.\n\n"
+            "Polish this text for grammar and clarity only. Keep it factual and formal.\n\n"
+            "✅ Neutral tone\n✅ Proper formatting\n✅ Human-sounding clarity\n✅ Clear closing statement"
         )
-
 
     elif type_ == "Process Performance":
-        extra_line = f"Considering efficiency and errors, {extra}.\n" if extra else ""
         template = (
-            f"In terms of key requirements, {key_req}.\n"
-            f"In terms of supplementary information, {supp_info}.\n"
-            f"{extra_line}"
-            f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
-            "Rephrase the text for grammar and clarity only. "
-            "Do NOT change structure or format. Do not add or remove information.\n\n"
-            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
+            f"Both models {key_req or 'attempted to meet the process requirements'}.\n"
+            f"Model {model} {supp_info or 'completed the key steps correctly'}, but Model {other_model} did not.\n"
+            f"{f'Model {model} made fewer errors while Model {other_model} made {extra} mistakes.' if extra else ''}\n"
+            f"Therefore, Model {model} is {strength} better than Model {other_model} in process performance.\n\n"
+            "Rephrase for grammar and clarity only. Do not change structure or format.\n\n"
+            "✅ Consistent structure\n✅ Perfect grammar\n✅ Human-sounding clarity\n✅ Zero format drift"
         )
 
-    else:  # Outcome Performance
-        extra_line = f"Additionally, {extra}.\n" if extra else ""
-        template = (
-            f"In terms of key results, {key_req}.\n"
-            f"In terms of supplementary information, {supp_info}.\n"
-            f"{extra_line}"
-            f"Therefore, Model {model} is {strength} better than Model {other_model}.\n\n"
-            "Rephrase the text for grammar and clarity only. "
-            "Do NOT change structure or format. Do not add or remove information.\n\n"
-            "✅ Consistent structure\n✅ Perfect grammar and phrasing\n✅ Human-sounding clarity\n✅ Zero format drift"
-        )
+    # --- Outcome Performance (no redundancy) ---
+    template = (
+        f"In terms of key results, both models {key_req or 'produced valid and complete outputs'}.\n"
+        f"Model {model} {supp_info or 'included additional useful results'}, but Model {other_model} did not.\n"
+        f"{f'Model {model} avoided {extra} mistakes that Model {other_model} made.' if extra else ''}\n"
+        f"Therefore, Model {model} is {strength} better than Model {other_model} in outcome performance.\n\n"
+        "Rephrase for grammar and clarity only. Do not change structure or format.\n\n"
+        "✅ Consistent structure\n✅ Perfect grammar\n✅ Human-sounding clarity\n✅ Zero format drift"
+    )
+
+
+
 
     # --- Send to DeepSeek API ---
     try:
